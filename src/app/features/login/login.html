@@ -1,0 +1,42 @@
+<div class="auth-card">
+  <h1>Connexion</h1>
+  <p class="hint">
+    Compte de test Fake Store API pré-rempli — clique juste sur "Se connecter".
+  </p>
+
+  <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+    <label>
+      Nom d'utilisateur
+      <input
+        type="text"
+        name="username"
+        [(ngModel)]="username"
+        required
+        autocomplete="username"
+      />
+    </label>
+
+    <label>
+      Mot de passe
+      <input
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        required
+        autocomplete="current-password"
+      />
+    </label>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <button type="submit" [disabled]="loading()">
+      {{ loading() ? 'Connexion...' : 'Se connecter' }}
+    </button>
+  </form>
+
+  <p class="back-link">
+    <a routerLink="/catalog">← Retour au catalogue</a>
+  </p>
+</div>

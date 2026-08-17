@@ -1,0 +1,25 @@
+<header class="navbar">
+  <div class="navbar__inner">
+    <a class="navbar__brand" routerLink="/catalog">🛒 ShopSN</a>
+
+    <nav class="navbar__links">
+      <a routerLink="/catalog" routerLinkActive="active">Catalogue</a>
+      <a routerLink="/cart" routerLinkActive="active">
+        Panier
+        @if (cart.itemCount() > 0) {
+          <span class="badge">{{ cart.itemCount() }}</span>
+        }
+      </a>
+
+      @if (auth.isAuthenticated()) {
+        <button class="navbar__logout" (click)="logout()">Déconnexion</button>
+      } @else {
+        <a routerLink="/login" routerLinkActive="active">Connexion</a>
+      }
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <router-outlet />
+</main>

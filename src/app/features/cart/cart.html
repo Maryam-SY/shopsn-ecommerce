@@ -1,0 +1,40 @@
+<h1>Mon panier</h1>
+
+@if (cart.cartItems().length === 0) {
+  <p class="status">
+    Ton panier est vide.
+    <a routerLink="/catalog">Retourner au catalogue</a>
+  </p>
+} @else {
+  <div class="cart-list">
+    @for (item of cart.cartItems(); track item.product.id) {
+      <div class="cart-row">
+        <img [src]="item.product.image" [alt]="item.product.title" />
+
+        <div class="cart-row__info">
+          <p class="cart-row__title">{{ item.product.title }}</p>
+          <p class="cart-row__price">{{ item.product.price | number: '1.2-2' }} $</p>
+        </div>
+
+        <div class="cart-row__qty">
+          <button (click)="decrease(item.product.id, item.quantity)">−</button>
+          <span>{{ item.quantity }}</span>
+          <button (click)="increase(item.product.id, item.quantity)">+</button>
+        </div>
+
+        <p class="cart-row__subtotal">
+          {{ item.product.price * item.quantity | number: '1.2-2' }} $
+        </p>
+
+        <button class="cart-row__remove" (click)="remove(item.product.id)">
+          Supprimer
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="cart-summary">
+    <span>Total</span>
+    <strong>{{ cart.total() | number: '1.2-2' }} $</strong>
+  </div>
+}

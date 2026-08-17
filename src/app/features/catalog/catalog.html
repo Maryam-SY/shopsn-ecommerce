@@ -1,0 +1,42 @@
+<h1>Catalogue produits</h1>
+
+@if (loading()) {
+  <p class="status">Chargement des produits...</p>
+} @else if (error()) {
+  <p class="status status--error">{{ error() }}</p>
+} @else {
+  <div class="filters">
+    <button
+      class="filter-chip"
+      [class.active]="selectedCategory() === 'all'"
+      (click)="selectCategory('all')"
+    >
+      Tous
+    </button>
+    @for (cat of categories(); track cat) {
+      <button
+        class="filter-chip"
+        [class.active]="selectedCategory() === cat"
+        (click)="selectCategory(cat)"
+      >
+        {{ cat }}
+      </button>
+    }
+  </div>
+
+  <div class="grid">
+    @for (product of filteredProducts(); track product.id) {
+      <div class="card">
+        <img [src]="product.image" [alt]="product.title" />
+        <div class="card__body">
+          <p class="card__category">{{ product.category }}</p>
+          <h3 class="card__title">{{ product.title }}</h3>
+          <p class="card__price">{{ product.price | number: '1.2-2' }} $</p>
+          <button class="card__button" (click)="addToCart(product)">
+            Ajouter au panier
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
