@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,12 +10,13 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrl: './login.scss',
 })
 export class Login {
+  private auth = inject(AuthService);
+  private router = inject(Router);
+
   username = signal('mor_2314');
   password = signal('83r5^_');
   loading = signal(false);
   error = signal<string | null>(null);
-
-  constructor(private auth: AuthService, private router: Router) {}
 
   onSubmit(): void {
     if (!this.username() || !this.password()) {

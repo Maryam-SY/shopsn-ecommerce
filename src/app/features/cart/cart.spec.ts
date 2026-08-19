@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { Cart } from './cart';
 
@@ -9,6 +10,7 @@ describe('Cart', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Cart],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Cart);
@@ -18,5 +20,10 @@ describe('Cart', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should show empty cart message when there are no items', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.status')?.textContent).toContain('vide');
   });
 });

@@ -1,0 +1,16 @@
+node_modules
+dist
+.angular
+.git
+.github
+.vscode
+.editorconfig
+.gitignore
+.prettierrc
+docs
+README.md
+*.md
+.env
+.env.*
+coverage
+npm-debug.log

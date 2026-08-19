@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
@@ -11,6 +11,9 @@ import { Product } from '../../core/models/product.model';
   styleUrl: './catalog.scss',
 })
 export class Catalog implements OnInit {
+  private productService = inject(ProductService);
+  cart = inject(CartService);
+
   products = signal<Product[]>([]);
   categories = signal<string[]>([]);
   selectedCategory = signal<string>('all');
@@ -20,16 +23,14 @@ export class Catalog implements OnInit {
   filteredProducts = computed(() => {
     const category = this.selectedCategory();
     const all = this.products();
-    return category === 'all' ? all : all.filter(p => p.category === category);
+    return category === 'all' ? all : all.filter((p) => p.category === category);
   });
-
-  constructor(private productService: ProductService, public cart: CartService) {}
 
   ngOnInit(): void {
     this.loading.set(true);
 
     this.productService.getAll().subscribe({
-      next: products => {
+      next: (products) => {
         this.products.set(products);
         this.loading.set(false);
       },
@@ -40,7 +41,7 @@ export class Catalog implements OnInit {
     });
 
     this.productService.getCategories().subscribe({
-      next: categories => this.categories.set(categories),
+      next: (categories) => this.categories.set(categories),
     });
   }
 

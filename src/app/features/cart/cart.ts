@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
@@ -10,7 +10,7 @@ import { CartService } from '../../core/services/cart.service';
   styleUrl: './cart.scss',
 })
 export class Cart {
-  constructor(public cart: CartService) {}
+  cart = inject(CartService);
 
   increase(productId: number, currentQty: number): void {
     this.cart.updateQuantity(productId, currentQty + 1);

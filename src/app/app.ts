@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { CartService } from './core/services/cart.service';
@@ -10,11 +10,9 @@ import { CartService } from './core/services/cart.service';
   styleUrl: './app.scss',
 })
 export class App {
-  constructor(
-    public auth: AuthService,
-    public cart: CartService,
-    private router: Router
-  ) {}
+  auth = inject(AuthService);
+  cart = inject(CartService);
+  private router = inject(Router);
 
   logout(): void {
     this.auth.logout();
