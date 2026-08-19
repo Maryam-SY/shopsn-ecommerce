@@ -170,8 +170,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ─────────────────────────────────────────────
-  # 7. Sécurité — scan de vulnérabilités Docker
+   # ─────────────────────────────────────────────
+  # 7. Sécurité — scan de vulnérabilités de l'image Docker
   # ─────────────────────────────────────────────
   security-image:
     name: Scan image Docker (Trivy)
@@ -182,7 +182,7 @@ jobs:
 
     steps:
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           format: 'table'
