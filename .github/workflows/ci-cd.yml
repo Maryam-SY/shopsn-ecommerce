@@ -11,94 +11,144 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ─────────────────────────────────────────────
+  # 1. Qualité de code : installation + lint
+  # ─────────────────────────────────────────────
   lint:
     name: Lint
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+
       - run: npm ci
       - run: npm run lint
 
+  # ─────────────────────────────────────────────
+  # 2. Tests automatisés
+  # ─────────────────────────────────────────────
   test:
     name: Tests unitaires
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+
       - run: npm ci
       - run: npm test -- --watch=false
 
+  # ─────────────────────────────────────────────
+  # 3. Build applicatif
+  # ─────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
     needs: [lint, test]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+
       - run: npm ci
+
       - run: npm run build -- --configuration production
+
       - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
           retention-days: 7
 
+  # ─────────────────────────────────────────────
+  # 4. Sécurité — audit des dépendances npm
+  # ─────────────────────────────────────────────
   security-deps:
-    name: Scan dependances (npm audit)
+    name: Scan dépendances (npm audit)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+
       - run: npm ci
-      - name: Audit des dependances (niveau eleve bloquant)
+
+      - name: Audit des dépendances
         run: npm audit --audit-level=high
 
+  # ─────────────────────────────────────────────
+  # 5. Sécurité — détection de secrets
+  # ─────────────────────────────────────────────
   security-secrets:
     name: Scan secrets (Gitleaks)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Gitleaks scan
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ─────────────────────────────────────────────
+  # 6. Build & push image Docker vers GHCR
+  # ─────────────────────────────────────────────
   docker-build-push:
     name: Build & push image Docker
     runs-on: ubuntu-latest
-    needs: [build, security-deps, security-secrets]
+
+    needs:
+      - build
+      - security-deps
+      - security-secrets
+
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
-      - name: Connexion a GHCR
+
+      # Configuration de Docker Buildx
+      - name: Configurer Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Connexion à GitHub Container Registry
+      - name: Connexion à GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extraction des metadonnees (tags, labels)
+
+      # Génération des tags et labels
+      - name: Extraction des métadonnées
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -106,20 +156,30 @@ jobs:
           tags: |
             type=sha,format=short
             type=raw,value=latest
+
+      # Construction et publication de l'image
       - name: Build & push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+          # Cache GitHub Actions
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ─────────────────────────────────────────────
+  # 7. Sécurité — scan de vulnérabilités Docker
+  # ─────────────────────────────────────────────
   security-image:
     name: Scan image Docker (Trivy)
     runs-on: ubuntu-latest
-    needs: [docker-build-push]
+
+    needs:
+      - docker-build-push
+
     steps:
       - name: Trivy scan
         uses: aquasecurity/trivy-action@0.24.0
