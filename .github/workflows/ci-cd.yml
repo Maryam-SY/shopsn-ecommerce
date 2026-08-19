@@ -8,9 +8,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: maryam-sy/shopsn-ecommerce
 
 jobs:
+
   # ─────────────────────────────────────────────
   # 1. Qualité de code : installation + lint
   # ─────────────────────────────────────────────
@@ -19,62 +20,83 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - run: npm ci
-      - run: npm run lint
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Lancer le lint
+        run: npm run lint
+
 
   # ─────────────────────────────────────────────
-  # 2. Tests automatisés
+  # 2. Tests unitaires
   # ─────────────────────────────────────────────
   test:
     name: Tests unitaires
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - run: npm ci
-      - run: npm test -- --watch=false
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Lancer les tests
+        run: npm test -- --watch=false
+
 
   # ─────────────────────────────────────────────
-  # 3. Build applicatif
+  # 3. Build de l'application Angular
   # ─────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
+
+    needs:
+      - lint
+      - test
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - run: npm ci
+      - name: Installer les dépendances
+        run: npm ci
 
-      - run: npm run build -- --configuration production
+      - name: Build production
+        run: npm run build -- --configuration production
 
-      - uses: actions/upload-artifact@v4
+      - name: Sauvegarder le build
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
           retention-days: 7
+
 
   # ─────────────────────────────────────────────
   # 4. Sécurité — audit des dépendances npm
@@ -84,28 +106,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - run: npm ci
+      - name: Installer les dépendances
+        run: npm ci
 
       - name: Audit des dépendances
         run: npm audit --audit-level=high
 
+
   # ─────────────────────────────────────────────
-  # 5. Sécurité — détection de secrets
+  # 5. Sécurité — détection des secrets
   # ─────────────────────────────────────────────
   security-secrets:
     name: Scan secrets (Gitleaks)
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -114,8 +141,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+
   # ─────────────────────────────────────────────
-  # 6. Build & push image Docker vers GHCR
+  # 6. Build & push de l'image Docker vers GHCR
   # ─────────────────────────────────────────────
   docker-build-push:
     name: Build & push image Docker
@@ -133,7 +161,8 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
       # Configuration de Docker Buildx
       - name: Configurer Docker Buildx
@@ -147,7 +176,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Génération des tags et labels
+      # Génération des métadonnées Docker
       - name: Extraction des métadonnées
         id: meta
         uses: docker/metadata-action@v5
@@ -157,7 +186,7 @@ jobs:
             type=sha,format=short
             type=raw,value=latest
 
-      # Construction et publication de l'image
+      # Construction et publication
       - name: Build & push
         uses: docker/build-push-action@v6
         with:
@@ -170,8 +199,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-   # ─────────────────────────────────────────────
-  # 7. Sécurité — scan de vulnérabilités de l'image Docker
+
+  # ─────────────────────────────────────────────
+  # 7. Sécurité — scan de l'image Docker avec Trivy
   # ─────────────────────────────────────────────
   security-image:
     name: Scan image Docker (Trivy)
@@ -180,11 +210,25 @@ jobs:
     needs:
       - docker-build-push
 
+    permissions:
+      contents: read
+      packages: read
+
     steps:
+      # Connexion à GHCR pour permettre à Trivy
+      # d'accéder à l'image publiée
+      - name: Connexion à GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Scan de sécurité
       - name: Trivy scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image-ref: ghcr.io/maryam-sy/shopsn-ecommerce:latest
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
