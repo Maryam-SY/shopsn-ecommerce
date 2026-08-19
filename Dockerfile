@@ -1,21 +1,39 @@
-FROM node:22-alpine AS build
+# ============================================================
+# ÉTAPE 1 : Build Angular
+# ============================================================
+FROM node:22-alpine3.24 AS build
 
 WORKDIR /app
 
+# Copier les fichiers de dépendances
 COPY package.json package-lock.json ./
+
+# Installer les dépendances
 RUN npm ci
 
+# Copier le projet
 COPY . .
+
+# Build Angular en production
 RUN npm run build -- --configuration production
 
-FROM nginx:1.27-alpine AS runtime
 
+# ============================================================
+# ÉTAPE 2 : Serveur Nginx
+# ============================================================
+FROM nginx:alpine3.22
+
+# Supprimer la configuration et les fichiers par défaut
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copier le build Angular
+COPY --from=build /app/dist/ecommerce-app/browser/ /usr/share/nginx/html/
+
+# Configuration Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=build /app/dist/ecommerce-app/browser /usr/share/nginx/html
-
+# Port HTTP
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
-
+# Démarrer Nginx
 CMD ["nginx", "-g", "daemon off;"]
